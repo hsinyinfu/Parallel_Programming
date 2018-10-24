@@ -58,18 +58,18 @@ int main( int argc, char *argv[] ){
 
 void *tossDart( void *threadNum ){
 
-	double x, y;
+	int x, y;
 	long thread = (long) threadNum;
 	long long int localDartInCircle = 0;
 	long long int round = ( (thread < rest)? baseRound+1 : baseRound );
 
 	for( long long int i=0; i < round; i++ ){
 
-		x = (double) rand() / RAND_MAX;
-		y = (double) rand() / RAND_MAX;
+		x = rand();
+		y = rand();
 
 		double distance = pow( x, 2 ) + pow( y, 2 );
-		if( distance <= 1.0 )
+		if( distance <= pow( RAND_MAX, 2 ) )
 			localDartInCircle++;
 	}
 
