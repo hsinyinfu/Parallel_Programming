@@ -24,8 +24,6 @@ int main( int argc, char *argv[] ){
 	int cpuNum = atoi( argv[1] );
 	long long int tossNum = atol( argv[2] );
 
-	srand( time(NULL) );
-
 	baseRound = tossNum / cpuNum;	// The number of rounds every thread must do
 
 	rest = tossNum % cpuNum;		/* The remaining rounds n which occurs when
@@ -63,10 +61,12 @@ void *tossDart( void *threadNum ){
 	long long int localDartInCircle = 0;
 	long long int round = ( (thread < rest)? baseRound+1 : baseRound );
 
+	unsigned int seed = time( NULL );
+
 	for( long long int i=0; i < round; i++ ){
 
-		x = rand();
-		y = rand();
+		x = rand_r( &seed );
+		y = rand_r( &seed );
 
 		double distance = pow( x, 2 ) + pow( y, 2 );
 		if( distance <= pow( RAND_MAX, 2 ) )
