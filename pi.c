@@ -47,7 +47,7 @@ int main( int argc, char *argv[] ){
 	}
 
 	double pi = ( 4.0 * dartInCircle ) / tossNum;
-	printf( "pi: %lf\n", pi );
+	printf( "%lf\n", pi );
 	
 	free( threadHandles );
 	pthread_mutex_destroy( &mux );
@@ -68,7 +68,7 @@ void *tossDart( void *threadNum ){
 		x = (double) rand() / RAND_MAX;
 		y = (double) rand() / RAND_MAX;
 
-		double distance = sqrt( pow( x, 2 ) + pow( y, 2 ) );
+		double distance = pow( x, 2 ) + pow( y, 2 );
 		if( distance <= 1.0 )
 			localDartInCircle++;
 	}
