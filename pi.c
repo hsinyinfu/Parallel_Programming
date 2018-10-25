@@ -60,6 +60,8 @@ void *tossDart( void *threadNum ){
 	long thread = (long) threadNum;
 	long long int localDartInCircle = 0;
 	long long int round = ( (thread < rest)? baseRound+1 : baseRound );
+	double radius = pow( RAND_MAX, 2 );
+	double distance = 0;
 
 	unsigned int seed = time( NULL );
 
@@ -68,9 +70,10 @@ void *tossDart( void *threadNum ){
 		x = rand_r( &seed );
 		y = rand_r( &seed );
 
-		double distance = pow( x, 2 ) + pow( y, 2 );
-		if( distance <= pow( RAND_MAX, 2 ) )
+		distance = pow( x, 2 ) + pow( y, 2 );
+		if( distance <= radius )
 			localDartInCircle++;
+
 	}
 
 	/* critical section */
