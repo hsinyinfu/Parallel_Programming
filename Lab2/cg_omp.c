@@ -319,7 +319,7 @@ static void conj_grad(int colidx[],
 	//---------------------------------------------------------------------
 	// Initialize the CG algorithm:
 	//---------------------------------------------------------------------
-#pragma parallel for
+#pragma omp parallel for
 	for (j = 0; j < naa+1; j++) {
 		q[j] = 0.0;
 		z[j] = 0.0;
@@ -354,7 +354,7 @@ static void conj_grad(int colidx[],
 		//       The unrolled-by-8 version below is significantly faster
 		//       on the Cray t3d - overall speed of code is 1.5 times faster.
 
-#pragma omp parallel for private(sum)
+#pragma omp parallel for private(sum,k)
 		for (j = 0; j < lastrow - firstrow + 1; j++) {
 			sum = 0.0;
 			//#pragma omp parallel for reduction(+:sum)
@@ -424,7 +424,7 @@ static void conj_grad(int colidx[],
 	// The partition submatrix-vector multiply
 	//---------------------------------------------------------------------
 	sum = 0.0;
-#pragma omp parallel for private(d)
+#pragma omp parallel for private(d,k)
 	for (j = 0; j < lastrow - firstrow + 1; j++) {
 		d = 0.0;
 		//#pragma omp parallel for reduction(+:d)
