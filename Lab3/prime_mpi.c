@@ -39,22 +39,49 @@ int main(int argc, char *argv[])
 	}
 
 	pc=4;     /* Assume (2,3,5,7) are counted here */
-	avgWork = (limit - 11 + 1) / (size - 1);
-	remainWork = (limit - 11 + 1) % (size - 1);
+	avgWork = (limit - 11 + 1) / size;
+	remainWork = (limit - 11 + 1) % size;
 
 	if( locRank == 0 ) {
 		for( int id=1; id < size; id++ ) {
-			if( id <= remainWork ) {
-				start = 11 + (id-1)*avgWork + id - 1;
-				end = 11 + id*avgWork + id - 1;
+			if( id < remainWork ) {
+				//start = 11 + (id-1)*avgWork + id - 1;
+				//end = 11 + id*avgWork + id - 1;
+				start = 11 + id*avgWork + id;
+				end = 11 + (id+1)*avgWork + (id-1);
 			} else {
-				start = 11 + (id-1)*avgWork + remainWork;
-				end = 11 + id*avgWork + remainWork - 1;
+				//start = 11 + (id-1)*avgWork + remainWork;
+				//end = 11 + id*avgWork + remainWork - 1;
+				start = 11 + id*avgWork + remainWork;
+				end = 11 + (id+1)*avgWork + remainWork - 1;
 			}
 			MPI_Send( &start, 1, MPI_LONG_LONG, id, tag, MPI_COMM_WORLD );
 			MPI_Send( &end, 1, MPI_LONG_LONG, id, tag, MPI_COMM_WORLD );
 			MPI_Send( &avgWork, 1, MPI_LONG_LONG, id, tag, MPI_COMM_WORLD );
 			MPI_Send( &remainWork, 1, MPI_LONG_LONG, id, tag, MPI_COMM_WORLD );
+		}
+
+
+		if( locRank < remainWork ) {
+			//start = 11 + (id-1)*avgWork + id - 1;
+			//end = 11 + id*avgWork + id - 1;
+			start = 11 + locRank*avgWork;
+			end = 11 + (locRank+1)*avgWork;
+		} else {
+			//start = 11 + (id-1)*avgWork + remainWork;
+			//end = 11 + id*avgWork + remainWork - 1;
+			start = 11 + locRank*avgWork;
+			end = 11 + (locRank+1)*avgWork - 1;
+		}
+
+		for( long long int i = start; i <= end; i++ ) {
+			if( i % 2 == 0 )
+				continue;
+			if( isprime(i) ) {
+				pc++;
+				if( i > foundone )
+					foundone = i;
+			}
 		}
 
 		for( int i=1; i < size; i++ ) {
@@ -73,8 +100,8 @@ int main(int argc, char *argv[])
 
 		MPI_Recv( &start, 1, MPI_LONG_LONG, 0, tag, MPI_COMM_WORLD, &status );
 		MPI_Recv( &end, 1, MPI_LONG_LONG, 0, tag, MPI_COMM_WORLD, &status );
-		MPI_Recv( &avgWork, 1, MPI_LONG_LONG, 0, tag, MPI_COMM_WORLD, &status );
-		MPI_Recv( &remainWork, 1, MPI_LONG_LONG, 0, tag, MPI_COMM_WORLD, &status );
+		//MPI_Recv( &avgWork, 1, MPI_LONG_LONG, 0, tag, MPI_COMM_WORLD, &status );
+		//MPI_Recv( &remainWork, 1, MPI_LONG_LONG, 0, tag, MPI_COMM_WORLD, &status );
 
 		//printf("rank:%d, start: %lld, end: %lld, avgWork:%lld, remain:%lld, pc:%d, foundone:%d\n", 
 		//		locRank, start, end, avgWork, remainWork, partialPC, partialFO );
