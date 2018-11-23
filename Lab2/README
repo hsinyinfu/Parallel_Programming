@@ -1,3 +1,6 @@
+# OpenMP Programming
+Using OpenMP to accelerate the program provided by TA.
+
 Files:
     cg.c : main functions, the implementaion of conjugate gradient method.
     globals.h : some data defination.
