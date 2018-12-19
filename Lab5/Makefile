@@ -13,4 +13,4 @@ histogram_serial: image-histogram.o
 	$(CC) -c $^
 
 clean:
-	rm *.o histogram_serial histogram
+	rm -rf *.o histogram_serial histogram
