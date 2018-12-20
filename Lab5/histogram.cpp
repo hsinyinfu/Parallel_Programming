@@ -1,7 +1,5 @@
 #include <iostream>
 #include <string>
-#include <cstdlib>
-#include <cstring>
 #include <fstream>
 #include <CL/opencl.h>
 using namespace std;
@@ -12,8 +10,10 @@ using namespace std;
 string readKernelSource( const string& );
 
 int main( int argc, char *argv[] ){
-	unsigned int input_size;
+	unsigned int input_size, pixels, pixPerThread;
 	unsigned int *image, *histogram;
+	size_t maxWorkItems;
+	size_t maxWorkItemsEachDim[3];
 	string kernelSource;
 
 	// Open file streams
@@ -24,7 +24,6 @@ int main( int argc, char *argv[] ){
 	inFile >> input_size;
 	image = new unsigned int[input_size];
 	histogram = new unsigned int[256 * 3];
-	memset( histogram, 0, sizeof(unsigned int) * 256 * 3 );
 
 	unsigned int tmp;
 	int i = 0;
@@ -45,6 +44,26 @@ int main( int argc, char *argv[] ){
 	err = clGetPlatformIDs( 1, &platform_id, &num );
 	err = clGetDeviceIDs( platform_id, CL_DEVICE_TYPE_GPU, 1, &device,
 			&num_device );
+	err = clGetDeviceInfo( device, CL_DEVICE_MAX_WORK_ITEM_SIZES,
+			sizeof(maxWorkItemsEachDim), &maxWorkItemsEachDim, NULL );
+
+	// Compute the number of work-items & pixels for each work-item
+	maxWorkItems = 
+		maxWorkItemsEachDim[0] 
+		* maxWorkItemsEachDim[1] 
+		* maxWorkItemsEachDim[2];
+	pixels = input_size / 3;
+	if( pixels > maxWorkItems ){
+		pixPerThread = pixels / maxWorkItems;
+
+		// work load imbalance for each work-item,
+		// so we have to check the boundary in kernel function
+		// when accessing the array.
+		if( pixels % maxWorkItems != 0 ) pixPerThread++;
+	}
+	else{
+		pixPerThread = 1;
+	}
 
 	// Create context
 	cl_context context = clCreateContext( NULL, 1, &device, NULL, NULL, &err );
@@ -61,8 +80,6 @@ int main( int argc, char *argv[] ){
 	// Transfer data from host to the device memory
 	clEnqueueWriteBuffer( cmdQ, imgBuf, CL_TRUE, 0,
 			sizeof(unsigned int) * input_size, image, 0, NULL, NULL );
-	clEnqueueWriteBuffer( cmdQ, histBuf, CL_TRUE, 0, 
-			sizeof(unsigned int) * 256 * 3, histogram, 0, NULL, NULL );
 
 	// Create program
 	kernelSource = readKernelSource( "histogram_kernel.cl" );
@@ -71,36 +88,37 @@ int main( int argc, char *argv[] ){
 
 	cl_program program = clCreateProgramWithSource( context, 1,
 			&source, &sourceSize, &err );
-	if( err == CL_SUCCESS )
-		cerr << "build success" <<endl;
+	if( err != CL_SUCCESS )
+		cerr << "[ Create program With Source ] Failed." <<endl;
 
 	// Compile program
 	err = clBuildProgram( program, 1, &device, NULL, NULL, NULL );
 	cl_int ret = clGetProgramBuildInfo( program, device, 
 			CL_PROGRAM_BUILD_STATUS, 0, NULL, NULL);
-	if( ret == CL_BUILD_SUCCESS )
-		cerr << "correct" << endl;
+	if( ret != CL_BUILD_SUCCESS )
+		cerr << "[ Build Program ] Failed." << endl;
 
 	// Create kernel
 	cl_kernel kernel = clCreateKernel( program, "histogram", &err );
-	if( err == CL_SUCCESS )
-		cerr << "create kernel: success" << endl;
-	else if( err == CL_INVALID_PROGRAM_EXECUTABLE )
-		cerr << "create kernel: invalid program executable" << endl;
+	if( err != CL_SUCCESS )
+		cerr << "[ Create Kernel ] Failed." << endl;
+	if( err == CL_INVALID_PROGRAM_EXECUTABLE )
+		cerr << "[ Create Kernel ] Invalid program executable." << endl;
+
 
 	// Set kernel arguments
 	clSetKernelArg( kernel, 0, sizeof(cl_mem), &imgBuf );
 	clSetKernelArg( kernel, 1, sizeof(cl_mem), &histBuf );
-	clSetKernelArg( kernel, 2, sizeof(unsigned int), &input_size );
+	clSetKernelArg( kernel, 2, sizeof(unsigned int), &pixels );
+	clSetKernelArg( kernel, 3, sizeof(unsigned int), &pixPerThread );
 
 	// Execute kernel
-	size_t worksize = 768;
-	err = clEnqueueNDRangeKernel( cmdQ, kernel, 1, 0, &worksize, 
+	err = clEnqueueNDRangeKernel( cmdQ, kernel, 1, 0, &maxWorkItems, 
 			0, 0, NULL, NULL );
-	if( err == CL_SUCCESS )
-		cerr << "enqueue nd range kernel: success" << endl;
+	if( err != CL_SUCCESS )
+		cerr << "[ Enqueue ND Range Kernel ] Failed." << endl;
 	if( err == CL_INVALID_KERNEL )
-		cerr << "enqueue nd range kernel: invalid kernel" << endl;
+		cerr << "[ Enqueue ND Range Kernel ] Invalid kernel." << endl;
 
 	// Transfer the result from device to host
 	clEnqueueReadBuffer( cmdQ, histBuf, CL_TRUE, 0, 

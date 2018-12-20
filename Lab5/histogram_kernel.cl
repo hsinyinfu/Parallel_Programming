@@ -1,29 +1,22 @@
 __kernel void histogram( 
 		__global unsigned int *img, 
 		__global unsigned int *hist, 
-		unsigned int size )
+		unsigned int nPixel,
+		unsigned int pixPerThread)
 {
+	unsigned int i, j, index;
 	const int idx = get_global_id(0);
-	int start, bar;
 
-	// Count one bar of RED
-	if( idx < 256 ){
-		start = 0;
-		bar = idx;
-	}
-	// Count one bar of GREEN
-	else if( idx >= 256 && idx < 512 ){
-		start = 1;
-		bar = idx - 256;
-	}
-	// Count one bar of BLUE
-	else{
-		start = 2;
-		bar = idx - 512;
-	}
-
-	for( int i = start; i < size; i+=3 ){
-		if( img[i] == bar )
-			hist[idx]++;
+	unsigned int start = idx * pixPerThread,
+				 end = (idx+1) * pixPerThread - 1;
+	
+	for( i = start; i <= end; i++ ){
+		if( i < nPixel ){
+			for( j = 0; j < 3; j++ ){
+				index = img[ i*3+j ]; 
+				atomic_inc( hist+(index + j*256) );
+			}
+		}	   
 	}
 }
+
