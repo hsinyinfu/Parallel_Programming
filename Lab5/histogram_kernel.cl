@@ -4,32 +4,26 @@ __kernel void histogram(
 		unsigned int size )
 {
 	const int idx = get_global_id(0);
-	int i;
+	int start, bar;
 
-	// Count one of the RED
+	// Count one bar of RED
 	if( idx < 256 ){
-		for( i = 0; i < size; i++ ){
-			if( i%3==0 && img[i]==idx ){
-				hist[idx]++;
-			}
-		}
+		start = 0;
+		bar = idx;
+	}
+	// Count one bar of GREEN
+	else if( idx >= 256 && idx < 512 ){
+		start = 1;
+		bar = idx - 256;
+	}
+	// Count one bar of BLUE
+	else{
+		start = 2;
+		bar = idx - 512;
 	}
 
-	// Count one of the GREEN
-	else if( idx >= 256 && idx <512 ){
-		for( i = 0; i < size; i++ ){
-			if( i%3==1 && img[i]==(idx-256) ){
-				hist[idx]++;
-			}
-		}
-	}
-
-	// Count one of the BLUE
-	else if( idx >= 512 && idx < 768 ){
-		for( i = 0; i < size; i++ ){
-			if( i%3==2 && img[i]==(idx-512) ){
-				hist[idx]++;
-			}
-		}
+	for( int i = start; i < size; i+=3 ){
+		if( img[i] == bar )
+			hist[idx]++;
 	}
 }
